@@ -991,6 +991,29 @@ async function cloudGetRaw(key) {
     return "";
   }
 }
+// === 页面加载时自动从云端读取保存的数据 ===
+window.addEventListener('DOMContentLoaded', async () => {
+  const keys = ['wallet-balance', 'mood', 'diary', 'secret']; // 网页保存内容用的key
+  for (const key of keys) {
+    try {
+      const value = await cloudGetRaw(key);
+      if (value) {
+        const el = document.querySelector(`[data-key="${key}"]`);
+        if (el) {
+          if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+            el.value = value;
+          } else {
+            el.textContent = value;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(`加载 ${key} 出错`, e);
+    }
+  }
+  console.log('✅ 自动加载完成');
+});
+
 
 </script>
 </body>
