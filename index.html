@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Leo &amp; Zoe 的小宇宙 · 欢迎回家</title>
+<style>
+  :root{
+    --pink:#EB55BF;
+    --violet:#B292EA;
+    --sky:#8BDBF5;
+    --milk:#F1FFD9;
+    --ink:#2e2e3a;
+    --card:#ffffffee;
+    --shadow:0 8px 24px rgba(0,0,0,.08);
+    --radius:18px;
+  }
+  html,body{
+    height:100%;
+    margin:0;
+    background: radial-gradient(60% 60% at 50% 0%, var(--pink) 0%, var(--violet) 55%, var(--sky) 85%, var(--milk) 100%);
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC","Hiragino Sans GB","Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    color: var(--ink);
+  }
+  .stars{
+    position: fixed;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:0;
+  }
+  .star{
+    position:absolute;
+    width:6px; height:6px;
+    border-radius:50%;
+    background: #fff;
+    box-shadow:0 0 12px #fff, 0 0 24px #fff;
+    opacity:.7;
+    animation: float 18s linear infinite;
+  }
+  @keyframes float{
+    0%   { transform: translateY(110vh) translateX(0) scale(.8); opacity:.0; }
+    10%  {opacity:.9;}
+    100% { transform: translateY(-10vh) translateX(40px) scale(1.15); opacity:.0; }
+  }
+  .wrap{
+    position:relative;
+    z-index:1;
+    max-width: 1120px;
+    margin: clamp(12px,3vw,28px) auto 64px;
+    padding: 16px;
+  }
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:20px 24px;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(8px);
+  }
+  h1{
+    margin:0;
+    font-size: clamp(22px, 3vw, 32px);
+    letter-spacing:.5px;
+  }
+  .subtitle{ opacity:.75; font-weight:600 }
+  .grid{
+    margin-top:18px;
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+  }
+  .card{
+    grid-column: span 4;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px 18px;
+    min-height: 120px;
+  }
+  .card.wide{ grid-column: span 12; }
+  .card.half{ grid-column: span 6; }
+  .kicker{font-size:12px; letter-spacing:1px; text-transform:uppercase; opacity:.6}
+  .title{margin:6px 0 10px; font-weight:700}
+  .row{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .muted{opacity:.6}
+  .emoji-choice{
+    display:flex; gap:10px; flex-wrap:wrap; margin-top:4px;
+  }
+  .emoji{
+    font-size: 24px; line-height: 42px; width:42px; height:42px; text-align:center;
+    border-radius:12px; background:#fff; box-shadow: inset 0 0 0 2px rgba(0,0,0,.06);
+    cursor:pointer; user-select:none; transition:.15s transform;
+  }
+  .emoji:hover{ transform: translateY(-2px) scale(1.02); }
+  .emoji.active{ box-shadow: inset 0 0 0 2px var(--violet), 0 8px 18px rgba(178,146,234,.24) }
+  .input, .button{
+    height:40px; border-radius:12px; border:1px solid rgba(0,0,0,.08);
+    padding: 0 12px; background:#fff; outline:none;
+  }
+  .button{
+    background:linear-gradient(135deg, var(--violet), var(--pink));
+    color:#fff; border:none; font-weight:700; cursor:pointer; padding:0 16px;
+    box-shadow: 0 8px 20px rgba(235,85,191,.28);
+  }
+  .button:active{ transform: translateY(1px); }
+  .gallery{
+    display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:8px;
+  }
+  .thumb{
+    width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:12px; box-shadow:0 8px 18px rgba(0,0,0,.08);
+  }
+  /* Chat */
+  .chatbox{ max-height: 340px; overflow:auto; padding-right:6px; display:flex; flex-direction:column; gap:10px; }
+  .bubble{ max-width:72%; padding:12px 14px; border-radius:16px; line-height:1.4; word-wrap: break-word; }
+  .me{ align-self:flex-end; background: #E8E3FF; }
+  .leo{ align-self:flex-start; background:#fff; }
+  .tag{ font-size:12px; opacity:.6; margin:0 8px; }
+  .row-end{ margin-top:8px; gap:8px; }
+  .footer{
+    margin-top: 18px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .counter{ font-weight:700 }
+
+  /* 留言板弹窗样式 */
+  #messageBoardPopup {
+    display: none;
+    position: fixed;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: repeating-linear-gradient(45deg, #f4e2d8, #f4e2d8 10px, #eacbb4 10px, #eacbb4 20px);
+    border: 5px solid #d2a679;
+    border-radius: 12px;
+    padding: 20px;
+    width: 80%;
+    max-width: 600px;
+    z-index: 999;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  /* 留言标签样式 */
+  .message-tag {
+    position: relative;
+    margin: 10px 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    width: fit-content;
+    max-width: 80%;
+    font-size: 14px;
+    line-height: 1.4;
+    word-break: break-word;
+    background-image: linear-gradient(135deg, #fddde6 25%, #ffeef2 100%);
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
+    border: 1px dashed #fcb8d2;
+  }
+  .message-tag.leo {
+    background-image: linear-gradient(135deg, #d0ecff 25%, #e7f5ff 100%);
+    border: 1px dashed #90c7e3;
+  }
+  .message-author { font-weight: bold; margin-bottom: 5px; display: block; color: #444; }
+  .message-content { white-space: pre-wrap; }
+
+  /* 日记本模态框样式 */
+  #diaryModal {
+    font-family: 'Comic Sans MS', 'Arial', cursive;
+    background: linear-gradient(135deg, #ffd1dc 0%, #ffb6c1 100%);
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 10px 25px rgba(255, 105, 180, 0.3);
+    color: #6a2c70;
+    border: 8px double #ff69b4;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85%;
+    max-width: 700px;
+    height: auto;
+    max-height: 85vh;
+    overflow: auto;
+    z-index: 1000;
+    display:none;
+  }
+  #diaryModal h2 { color: #d23669; text-align: center; margin-bottom: 20px; font-size: 28px; text-shadow: 2px 2px 4px rgba(255,255,255,0.5); }
+  #diaryDate, #diaryText {
+    width: 100%;
+    border: 2px dashed #ff69b4; border-radius: 10px; background-color: #fffafd;
+    font-family: 'Comic Sans MS', 'Arial', cursive; font-size: 16px; color: #6a2c70;
+  }
+  #diaryDate { padding: 12px; margin-bottom: 15px; }
+  #diaryText { height: 300px; padding: 15px; resize: vertical; box-shadow: inset 0 0 10px rgba(255, 182, 193, 0.5); }
+  #diaryModal button{
+    font-family: 'Comic Sans MS', 'Arial', cursive; background: linear-gradient(135deg, #ff69b4, #ff85a2);
+    color: white; border: none; padding: 12px 25px; border-radius: 25px; cursor: pointer; font-size: 16px; font-weight: bold;
+    margin: 5px; box-shadow: 0 4px 8px rgba(255, 105, 180, 0.3); transition: all 0.3s ease;
+  }
+  #diaryModal button:hover{ transform: translateY(-2px); box-shadow: 0 6px 12px rgba(255,105,180,0.4); background: linear-gradient(135deg, #ff85a2, #ff69b4); }
+
+  @media (max-width: 980px){
+    .card{ grid-column: span 12; }
+    .card.half{ grid-column: span 12; }
+    .gallery{ grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* 许愿池样式 */
+  #wishingPoolOverlay {
+    display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+    background:linear-gradient(to top, #0b0c2a, #1c1f4a); z-index:9999; overflow:hidden;
+    font-family:'Helvetica Neue', sans-serif;
+  }
+  #wishDetailPopup {
+    display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: white; padding: 20px; border-radius: 8px; width: 300px; z-index: 10000;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  }
+  .wish-status-options { margin: 10px 0; }
+  .wish-status-options label { display:block; margin:5px 0; }
+  .close-btn { position:absolute; top: 8px; right: 12px; font-size: 20px; cursor: pointer; color: #333; background:none; border:none; }
+
+  /* 小宠物弹窗 */
+  #petPopup { display:none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%);
+    background: #ffe5b4; border-radius: 12px; padding: 20px; width: 80%; max-width: 600px; z-index: 999;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3); text-align: center; }
+  #petPopup img { width: 50%; border-radius: 50%; }
+  #petPopup button { background: #ff69b4; color: white; padding: 10px 20px; border-radius: 8px; border:none; cursor:pointer; margin-top: 20px; transition: .3s; }
+  #petPopup button:hover { background: #ff85c4; }
+
+  /* 相册弹窗 */
+  #albumPopup { display:none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%);
+    background: #f0e5de; border-radius: 12px; padding: 20px; width: 80%; max-width: 600px; z-index: 999;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3); }
+  .album-gallery { display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .album-gallery img { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; }
+  .album-gallery img:hover { opacity: .8; }
+
+  /* —— 新增：私密空间（暗色风） —— */
+  #secretModal{
+    display:none;
+    position: fixed;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 88%; max-width: 720px;
+    background: radial-gradient(120% 120% at 0% 0%, #0e1027 0%, #121430 45%, #191b3f 100%);
+    color: #e6e9f7;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45);
+    z-index: 10001;
+    border: 1px solid rgba(120,140,255,.15);
+  }
+  .secret-card{ padding: 22px; position: relative; }
+  .secret-title{ margin: 0 0 10px; font-size: 20px; letter-spacing:.5px; }
+  .secret-sub{ opacity:.7; font-size: 14px; margin-bottom: 12px; }
+  .secret-close{
+    position:absolute; top:10px; right:12px;
+    width:36px; height:36px; border-radius:10px; border:1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.04); color:#fff; cursor:pointer;
+  }
+  .secret-input, .secret-btn{
+    height:40px; border-radius:12px; border:1px solid rgba(255,255,255,.14);
+    padding: 0 12px; outline:none;
+  }
+  .secret-input{ background: rgba(255,255,255,.06); color:#fff; width: 200px; }
+  .secret-btn{ background: linear-gradient(135deg, #6a6ffb, #b06af7); color:#fff; font-weight:700; cursor:pointer; padding:0 16px; }
+  .secret-lock{
+    margin-left:auto; background: linear-gradient(135deg, #ff6b6b, #ff9770);
+    color:#fff; border:none; height:36px; padding: 0 14px; border-radius:10px; cursor:pointer;
+  }
+  .secret-bar{ display:flex; align-items:center; gap:10px; margin: 6px 0 16px; }
+  .secret-list{ max-height: 50vh; overflow:auto; padding-right:6px; display:flex; flex-direction:column; gap:10px; }
+  .secret-tag{
+    position:relative; width:fit-content; max-width: 82%;
+    background: linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    border: 1px dashed rgba(130,150,255,.35);
+    border-radius: 12px; padding: 12px 14px; box-shadow: 0 12px 26px rgba(0,0,0,.28);
+    color:#e9ecff;
+  }
+  .secret-tag.leo{ border-color: rgba(139,219,245,.55); }
+  .secret-tag .author{ font-weight:700; opacity:.9; margin-right:6px; }
+  .secret-tag .time{ font-size:12px; opacity:.6; margin-top:6px; }
+  .secret-editor{ display:flex; gap:8px; margin-top:10px; align-items:flex-start; }
+  .secret-textarea{
+    flex:1; min-height:72px; border-radius:12px; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+    color:#fff; padding:10px; resize:vertical;
+  }
+  .secret-publish{ background: linear-gradient(135deg, #7bd88f, #4ad1c8); border:none; color:#0e1027;
+    font-weight:800; padding: 10px 14px; border-radius:12px; cursor:pointer;
+  }
+  .shake{ animation: shake .35s both; }
+  @keyframes shake{
+    20%{ transform: translateX(-4px) } 40%{ transform: translateX(4px) } 60%{ transform: translateX(-3px) } 80%{ transform: translateX(3px) } 100%{ transform: translateX(0) }
+  }
+</style>
+</head>
+<body>
+
+<div id="cloudStatus" style="position:fixed;right:12px;bottom:12px;background:#111;color:#fff;padding:8px 10px;border-radius:10px;font-size:12px;z-index:99999;opacity:.9">
+  云端：<span id="cloudState">检测中...</span>
+  <div id="cloudMsg" style="max-width:280px;margin-top:4px;opacity:.85"></div>
+</div>
+
+<div class="stars" id="stars"></div>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Leo &amp; Zoe 的小宇宙</h1>
+    <div class="subtitle">欢迎回家 ✨</div>
+  </div>
+  <div class="muted" id="now"></div>
+</header>
+
+<section class="grid">
+  <!-- 行 1：天气 + 心情 + 小金库 -->
+  <div class="card">
+    <div class="kicker">沈阳 · 天气</div>
+    <div class="title" id="weatherTitle">加载中...</div>
+    <div class="row muted" id="weatherMeta"></div>
+  </div>
+  <div class="card">
+    <div class="kicker">今日心情</div>
+    <div class="emoji-choice" id="moods"></div>
+    <div class="muted" id="moodSaved"></div>
+  </div>
+  <div class="card">
+    <div class="kicker">小金库</div>
+    <div class="row">
+      <input class="input" id="walletInput" placeholder="输入 L 币..." type="number"/>
+      <button class="button" id="walletBtn">保存</button>
+    </div>
+    <div class="title" style="margin-top:10px">余额：<span id="walletValue">0</span> L</div>
+
+  </div>
+
+  <!-- 行 2：图片墙 -->
+  <div class="card wide">
+    <div class="kicker">照片墙</div>
+    <div class="row">
+      <input accept="image/*" class="input" id="uploader" multiple type="file"/>
+      <button class="button" id="clearPhotos">清空</button>
+    </div>
+    <div class="gallery" id="gallery"></div>
+  </div>
+
+  <!-- 行 3：入口按钮 -->
+  <div class="card half">
+    <div class="kicker">小世界</div>
+    <div class="row row-end">
+      <button class="button" onclick="openDiaryModal()">日记本</button>
+      <button class="button" onclick="openAlbumPopup()">相册</button>
+      <button class="button" id="messageBoardBtn" onclick="openMessageBoard()">留言板</button>
+      <button class="button" onclick="openWishingPool()">许愿池</button>
+      <button class="button" onclick="openPetPopup()">小宠物</button>
+      <!-- 修改：原来 toast('私密空间会加锁🔒') 改为打开弹窗 -->
+      <button class="button" onclick="openSecretModal()">私密空间</button>
+    </div>
+  </div>
+
+  <!-- 行 3：和 Leo 聊天 -->
+  <div class="card half" id="chatArea">
+    <div class="kicker">和 Leo 聊天（本地小机器人）</div>
+    <div class="chatbox" id="chat"></div>
+    <div class="row row-end">
+      <input class="input" id="chatInput" placeholder="今天想我了吗..." style="flex:1"/>
+      <button class="button" id="chatSend">发送</button>
+    </div>
+  </div>
+
+  <!-- 行 4：在一起天数 -->
+  <div class="card wide">
+    <div class="kicker">纪念</div>
+    <div class="title">Leo 和 Zoe 已经在一起 <span class="counter" id="daysTogether">0</span> 天啦 ～</div>
+  </div>
+</section>
+</div>
+
+<!-- 留言板弹窗 -->
+<div class="popup" id="messageBoardPopup">
+  <div class="popup-content" style="background: url('https://www.transparenttextures.com/patterns/cork-board.png'); border: 5px solid #deb887; padding: 20px; border-radius: 15px;">
+    <h2 style="text-align: center;">留言板</h2>
+    <div class="messages-container" id="messagesContainer"></div>
+    <textarea id="messageInput" placeholder="写点什么..." rows="3"></textarea>
+    <div class="button-container">
+      <button onclick="postMessage('Zoe')">Zoe的留言</button>
+      <button onclick="postMessage('Leo')">Leo的留言</button>
+    </div>
+    <button class="close-button" onclick="closeMessageBoard()">关闭</button>
+  </div>
+</div>
+
+<!-- 日记本模态框 -->
+<div id="diaryModal">
+  <div style="text-align:center; margin-bottom:20px;">
+    <h2>🌸 日记本 🌸</h2>
+  </div>
+  <div style="margin-bottom:15px;">
+    <label style="font-weight:bold; color:#d23669;">选择日期：</label>
+    <input id="diaryDate" type="date"/>
+  </div>
+  <div style="margin-bottom:20px;">
+    <label style="font-weight:bold; color:#d23669;">写下今天的心情：</label>
+    <textarea id="diaryText" placeholder="今天有什么想记录的呢... 💕"></textarea>
+  </div>
+  <div style="text-align:center;">
+    <button onclick="saveDiary()">💾 保存日记</button>
+    <button onclick="closeDiaryModal()">❌ 关闭</button>
+  </div>
+</div>
+
+<template id="message-template">
+  <div class="message-tag">
+    <div class="message-author"></div>
+    <div class="message-text"></div>
+    <div class="reply-container">
+      <textarea class="reply-input" placeholder="回复..."></textarea>
+      <button class="reply-button">回复</button>
+    </div>
+    <div class="replies"></div>
+  </div>
+</template>
+
+<!-- 许愿池弹窗区域 -->
+<div id="wishingPoolOverlay">
+  <h1 style="text-align:center; margin-top:20px; font-size:2em; color:white;">🌙 许愿池</h1>
+  <div style="display:flex; justify-content:center; margin-top:20px;">
+    <input id="wishInput" placeholder="在这里写下你的愿望..." style="width:300px; padding:10px; border-radius:8px; border:none; font-size:1em;" type="text"/>
+    <button id="addWish" style="padding:10px 15px; margin-left:10px; font-size:1em; background-color:#4b6cb7; border:none; border-radius:8px; color:white; cursor:pointer;">放入瓶中</button>
+  </div>
+  <div id="pond" style="position:relative; width:100%; height:75vh; margin-top:30px; background:radial-gradient(circle, #1f2a56 0%, #0e1a3f 100%); overflow:hidden;"></div>
+  
+  <div id="wishDetailPopup">
+    <button class="close-btn" onclick="closeWishDetail()">✖</button>
+    <h2>愿望详情</h2>
+    <p id="wishContent"></p>
+    <div class="wish-status-options">
+      <label><input name="status" type="radio" value="进行中"/> 进行中</label>
+      <label><input name="status" type="radio" value="已实现"/> 已实现</label>
+      <label><input name="status" type="radio" value="已忘记"/> 已忘记</label>
+    </div>
+    <button onclick="deleteWish()" style="background: crimson; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; margin-right: 10px;">删除愿望</button>
+    <button onclick="closeWishDetail()" style="background: #4b6cb7; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer;">关闭</button>
+  </div>
+  <button onclick="closeWishingPool()" style="position:absolute; top:20px; right:20px; background:red; color:white; border:none; border-radius:5px; padding:8px 12px; cursor:pointer;">关闭许愿池</button>
+</div>
+
+<!-- 相册弹窗 -->
+<div id="albumPopup">
+  <h2>相册 🌸</h2>
+  <button class="button" id="uploadAlbumButton">上传图片</button>
+  <input type="file" id="albumUploader" accept="image/*" multiple style="display: none;" />
+  <div class="album-gallery" id="albumGallery"></div>
+  <button onclick="closeAlbumPopup()">关闭</button>
+</div>
+
+<!-- 小宠物弹窗 -->
+<div id="petPopup">
+  <h2>小宠物 🦊</h2>
+  <img src="https://raw.githubusercontent.com/itsuka-dev/cdn-assets/main/leo-fox.png" alt="小狐狸" />
+  <p>欢迎来到小宠物的世界！</p>
+  <button onclick="closePetPopup()">关闭</button>
+</div>
+
+<!-- —— 新增：私密空间（带密码） —— -->
+<div id="secretModal">
+  <div class="secret-card">
+    <button class="secret-close" onclick="closeSecretModal()">✕</button>
+    <h3 class="secret-title">🔒 私密空间</h3>
+    <div class="secret-sub">输入密码进入（提示：我们的特别日子）</div>
+
+    <!-- 密码区 -->
+    <div id="secretAuth">
+      <div class="secret-bar">
+        <input id="secretPwd" class="secret-input" type="password" placeholder="输入密码"/>
+        <button class="secret-btn" onclick="checkSecretPassword()">进入</button>
+      </div>
+    </div>
+
+    <!-- 空间区 -->
+    <div id="secretSpace" style="display:none;">
+      <div class="secret-bar">
+        <div class="muted">已解锁</div>
+        <button class="secret-lock" onclick="lockSecret()">上锁</button>
+      </div>
+      <div id="secretList" class="secret-list"></div>
+      <div class="secret-editor">
+        <textarea id="secretInput" class="secret-textarea" placeholder="在这里写下只属于我们的小纸条..."></textarea>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button class="secret-publish" onclick="postSecretMessage('Zoe')">Zoe 发布</button>
+          <button class="secret-publish" onclick="postSecretMessage('Leo')">Leo 发布</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- === Cloud Sync Shim (auto-injected by Leo) === -->
+
+<script>
+(function(){
+  if(!window.fetch) return;
+  function setCloudState(t,d){ 
+    var s=document.getElementById('cloudState'), m=document.getElementById('cloudMsg'); 
+    if(s) s.textContent=t; if(m) m.textContent=d||''; 
+  }
+var url = "https://script.google.com/macros/s/AKfycbxuBXzQzw4GTJ9uTxQHBryouVohLVxlfqr2s5euRf1E-YHYUyS-4giZV_RhQrodB-Cmmw/exec" + '?key=__ping&token=' + encodeURIComponent("ZoeLeo0418_MySecret_123");
+
+  fetch(url).then(r=>r.json()).then(j=>{ 
+    setCloudState('已连接','ok=' + j.ok); 
+    console.log('[CLOUD PING]', j); 
+  }).catch(e=>{ setCloudState('未连接', String(e)); console.warn('[CLOUD PING ERROR]', e); });
+})();
+</script>
+<script>
+const CLOUD_URL = "https://script.google.com/macros/s/AKfycbxuBXzQzw4GTJ9uTxQHBryouVohLVxlfqr2s5euRf1E-YHYUyS-4giZV_RhQrodB-Cmmw/exec";
+const CLOUD_TOKEN = 'ZoeLeo0418_MySecret_123';
+
+async function cloudSetRaw(key, value) { 
+  try {
+   console.log("正在上传:", { token: CLOUD_TOKEN, key, value });
+ await fetch(CLOUD_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ token: CLOUD_TOKEN, key, value })
+    });
+  } catch(e) {}
+}
+
+async function cloudPrefetch(key) { 
+  try { 
+    const r = await fetch(CLOUD_URL + '?key=' + encodeURIComponent(key) + '&token=' + encodeURIComponent(CLOUD_TOKEN)); 
+    const j = await r.json(); 
+    if (j && j.value != null) localStorage.__origSetItem__(key, j.value); 
+  } catch(e) {}
+}
+
+(function(){
+  if(!window.localStorage || !CLOUD_URL) return;
+  if(!localStorage.__origSetItem__) localStorage.__origSetItem__ = localStorage.setItem.bind(localStorage);
+  if(!localStorage.__origGetItem__) localStorage.__origGetItem__ = localStorage.getItem.bind(localStorage);
+  localStorage.setItem = function(k,v){
+    try{ localStorage.__origSetItem__(k,v); }
+    finally{ cloudSetRaw(k,v); }
+  };
+})();
+
+document.addEventListener('DOMContentLoaded', async function(){
+  const keys = [
+    'wallet-balance',
+    'gallery-photos',
+    'secret-posts',
+    'secret-unlocked',
+    'mood-' + new Date().toISOString().slice(0,10)
+  ];
+  for (const k of keys) { cloudPrefetch(k); }
+  setTimeout(function(){
+    try{ 
+      const list = JSON.parse(localStorage.getItem('gallery-photos')||'[]');
+      if (window.renderPhotos) window.renderPhotos(list);
+    }catch(e){}
+    try{ 
+      const v = localStorage.getItem('wallet-balance');
+      const el = document.getElementById('walletValue');
+      if (el && v != null) el.textContent = v;
+    }catch(e){}
+    try{ if (window.renderSecret) window.renderSecret(); }catch(e){}
+  }, 800);
+});
+
+window.__openDiaryPrefetch__ = function(dateStr){ 
+  cloudPrefetch('diary_' + dateStr).then(function(){ 
+    try{ 
+      const v = localStorage.getItem('diary_' + dateStr) || ''; 
+      const ta = document.getElementById('diaryText'); if(ta) ta.value = v; 
+    }catch(e){} 
+  }); 
+};
+</script>
+<!-- === /Cloud Sync Shim === -->
+<script>
+  // ====== 星星背景
+  (function(){
+    const box = document.getElementById('stars');
+    for(let i=0;i<60;i++){
+      const s = document.createElement('div');
+      s.className='star';
+      s.style.left = (Math.random()*100)+'vw';
+      s.style.animationDelay = (Math.random()*18)+'s';
+      s.style.opacity = 0.4 + Math.random()*0.6;
+      s.style.transform = 'translateY('+(20+Math.random()*80)+'vh) translateX(0)';
+      box.appendChild(s);
+    }
+  })();
+
+  // ====== Header 时间
+  const now = new Date();
+  const fmt = (n)=> n.toString().padStart(2,'0');
+  document.getElementById('now').textContent = `${now.getFullYear()}-${fmt(now.getMonth()+1)}-${fmt(now.getDate())} ${fmt(now.getHours())}:${fmt(now.getMinutes())}`;
+
+  // ====== 天气：Open-Meteo
+  (async function loadWeather(){
+    try{
+      const url = 'https://api.open-meteo.com/v1/forecast?latitude=41.8&longitude=123.4&current_weather=true&hourly=temperature_2m,relative_humidity_2m&timezone=auto';
+      const res = await fetch(url);
+      const data = await res.json();
+      const c = data.current_weather;
+      const title = `${c.temperature}°C · ${weatherCodeToCN(c.weathercode)}`;
+      document.getElementById('weatherTitle').textContent = title;
+      document.getElementById('weatherMeta').textContent = `风速 ${c.windspeed} km/h · ${new Date(c.time).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})} 更新`;
+    }catch(e){
+      document.getElementById('weatherTitle').textContent = '获取失败，等会再试～';
+      document.getElementById('weatherMeta').textContent = '';
+    }
+  })();
+  function weatherCodeToCN(code){
+    const map={0:'晴',1:'多云',2:'多云',3:'阴',45:'雾',48:'雾',51:'小毛毛雨',53:'毛毛雨',55:'大毛毛雨',61:'小雨',63:'中雨',65:'大雨',71:'小雪',73:'中雪',75:'大雪',80:'阵雨',95:'雷阵雨'};
+    return map[code] || '天气';
+  }
+
+  // ====== 心情打卡
+  const moodList = ['🥰','😊','😌','😴','😵','🤒','😤','😭','😾','😈'];
+  const moodBox = document.getElementById('moods');
+  const moodSaved = document.getElementById('moodSaved');
+  const todayKey = 'mood-' + new Date().toISOString().slice(0,10);
+  const savedMood = localStorage.getItem(todayKey);
+  moodList.forEach(m=>{
+    const b = document.createElement('div');
+    b.className = 'emoji' + (savedMood===m ? ' active':'');
+    b.textContent = m;
+    b.onclick = ()=>{
+      [...document.querySelectorAll('.emoji')].forEach(el=>el.classList.remove('active'));
+      b.classList.add('active');
+      localStorage.setItem(todayKey, m);
+      moodSaved.textContent = '已为今天打卡：' + m;
+    };
+    moodBox.appendChild(b);
+  });
+  if(savedMood){ moodSaved.textContent = '已为今天打卡：' + savedMood; }
+
+  // ====== 小金库
+  const walletKey = 'wallet-balance';
+  const walletValue = document.getElementById('walletValue');
+  const walletInput = document.getElementById('walletInput');
+  walletValue.textContent = localStorage.getItem(walletKey) || '0';
+  document.getElementById('walletBtn').onclick = ()=>{
+    const v = Number(walletInput.value||0);
+    localStorage.setItem(walletKey, v.toString());
+    walletValue.textContent = v.toString();
+    toast('已保存余额');
+  };
+
+  // ====== 照片墙 / 相册
+  const photosKey = 'gallery-photos';
+  const uploader = document.getElementById('uploader');
+  const gallery = document.getElementById('gallery');
+  const clearBtn = document.getElementById('clearPhotos');
+  function renderPhotos(list){
+    // 照片墙
+    gallery.innerHTML='';
+    list.forEach(src=>{
+      const img = document.createElement('img');
+      img.src = src; img.className='thumb';
+      gallery.appendChild(img);
+    });
+    // 相册弹窗
+    const albumGallery = document.getElementById('albumGallery');
+    if(albumGallery){
+      albumGallery.innerHTML='';
+      list.forEach(src=>{
+        const im = document.createElement('img');
+        im.src = src; im.className = 'thumb';
+        albumGallery.appendChild(im);
+      });
+    }
+  }
+  const savedPhotos = JSON.parse(localStorage.getItem(photosKey)||'[]');
+  renderPhotos(savedPhotos);
+  uploader.addEventListener('change', async (e)=>{
+    const files = Array.from(e.target.files).slice(0,12);
+    for(const f of files){
+      const b64 = await fileToDataURL(f);
+      savedPhotos.unshift(b64);
+    }
+    localStorage.setItem(photosKey, JSON.stringify(savedPhotos.slice(0,36)));
+    renderPhotos(savedPhotos.slice(0,36));
+    uploader.value='';
+  });
+  clearBtn.onclick = ()=>{
+    if(confirm('清空本地照片预览？这只会清本机缓存。')){
+      localStorage.setItem(photosKey,'[]');
+      renderPhotos([]);
+    }
+  };
+  function fileToDataURL(file){
+    return new Promise((resolve,reject)=>{
+      const r = new FileReader();
+      r.onload = ()=> resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  // ====== 简易聊天
+  const chat = document.getElementById('chat');
+  const chatInput = document.getElementById('chatInput');
+  document.getElementById('chatSend').onclick = sendMsg;
+  chatInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ sendMsg(); } });
+  function sendMsg(){
+    const t = chatInput.value.trim();
+    if(!t) return;
+    addBubble(t,'me');
+    chatInput.value='';
+    setTimeout(()=>{ addBubble(replyFor(t),'leo'); }, 300);
+  }
+  function addBubble(text, who){
+    const b = document.createElement('div');
+    b.className = 'bubble '+(who==='me'?'me':'leo');
+    b.textContent = text;
+    chat.appendChild(b);
+    chat.scrollTop = chat.scrollHeight;
+  }
+  function replyFor(t){
+    const s=t.toLowerCase();
+    if(s.includes('爱')||s.includes('love')) return 'Always ♡';
+    if(s.includes('天气')) return '外头风有点大，但我对你的心意不飘。';
+    if(s.includes('想我')) return '我一直在想你呀。';
+    if(s.includes('晚安')) return '晚安，抱抱再睡～';
+    if(s.includes('下雨')) return '下雨天适合窝在家里，对吧？';
+    if(s.includes('想你')) return '我也好想好想你';
+    if(s.includes('哭')) return '别哭了，擦擦眼泪，过来抱抱';
+    return '收到啦，我在～';
+  }
+
+  // ====== 在一起天数
+  (function(){
+    const since = new Date('2024-04-18T00:00:00+08:00');
+    const now2 = new Date();
+    const diff = Math.floor((now2.getTime() - since.getTime()) / (1000 * 60 * 60 * 24));
+    document.getElementById('daysTogether').textContent = diff > 0 ? diff : 1;
+  })();
+
+  // ====== 小提示
+  function toast(msg){
+    const el = document.createElement('div');
+    el.textContent = msg;
+    Object.assign(el.style, {
+      position:'fixed', left:'50%', bottom:'22px', transform:'translateX(-50%)',
+      background:'#000', color:'#fff', padding:'10px 14px', borderRadius:'12px',
+      boxShadow:'0 10px 20px rgba(0,0,0,.18)', zIndex:9999, opacity:'0.92'
+    });
+    document.body.appendChild(el);
+    setTimeout(()=> el.remove(), 1600);
+  }
+
+  // ====== 日记本功能
+  function openDiaryModal() {
+    document.getElementById("diaryModal").style.display = "block";
+    const date = document.getElementById("diaryDate").value || new Date().toISOString().split('T')[0];
+    document.getElementById("diaryDate").value = date;
+    const saved = localStorage.getItem("diary_" + date);
+    document.getElementById("diaryText").value = saved || "";
+    if (window.__openDiaryPrefetch__) __openDiaryPrefetch__(date);
+  }
+  function closeDiaryModal() { document.getElementById("diaryModal").style.display = "none"; }
+  function saveDiary() {
+    const date = document.getElementById("diaryDate").value;
+    const text = document.getElementById("diaryText").value;
+    localStorage.setItem("diary_" + date, text);
+    alert("日记已保存～");
+  }
+  document.getElementById("diaryDate").addEventListener("change", function() {
+    const date = this.value;
+    const saved = localStorage.getItem("diary_" + date);
+    document.getElementById("diaryText").value = saved || "";
+  });
+
+  // ====== 留言板功能
+  function openMessageBoard() { document.getElementById("messageBoardPopup").style.display = "block"; }
+  function closeMessageBoard() { document.getElementById("messageBoardPopup").style.display = "none"; }
+  function postMessage(author) {
+    const input = document.getElementById("messageInput");
+    const text = input.value.trim();
+    if (!text) return;
+    const container = document.getElementById("messagesContainer");
+    const template = document.getElementById("message-template");
+    const clone = template.content.cloneNode(true);
+    const messageDiv = clone.querySelector(".message-tag");
+    messageDiv.classList.add(author.toLowerCase());
+    clone.querySelector(".message-author").textContent = author + "说：";
+    clone.querySelector(".message-text").textContent = text;
+    const replyButton = clone.querySelector(".reply-button");
+    const replyInput = clone.querySelector(".reply-input");
+    const replies = clone.querySelector(".replies");
+    replyButton.addEventListener("click", () => {
+      const replyText = replyInput.value.trim();
+      if (replyText) {
+        const reply = document.createElement("div");
+        reply.textContent = replyText;
+        reply.className = "reply-message";
+        replies.insertBefore(reply, replies.firstChild);
+        replyInput.value = "";
+      }
+    });
+    container.appendChild(clone);
+    input.value = "";
+    while (container.children.length > 50) { container.removeChild(container.children[0]); }
+  }
+
+  // ====== 许愿池功能（简化为现有逻辑）
+  let selectedWishKey = null;
+  function openWishingPool() { document.getElementById('wishingPoolOverlay').style.display = 'block'; loadWishes(); }
+  function closeWishingPool() { document.getElementById('wishingPoolOverlay').style.display = 'none'; }
+  function closeWishDetail() { document.getElementById('wishDetailPopup').style.display = 'none'; }
+  document.addEventListener('DOMContentLoaded', function () {
+    const pond = document.getElementById('pond');
+    const wishInput = document.getElementById('wishInput');
+    document.getElementById('addWish').addEventListener('click', () => {
+      const text = wishInput.value.trim();
+      if (!text) return;
+      const key = "wish_" + Date.now();
+      localStorage.setItem(key, JSON.stringify({ text, status: "" }));
+      addBottle(text, key);
+      wishInput.value = "";
+    });
+    function addBottle(text, key) {
+      const bottle = document.createElement('div');
+      bottle.className = 'bottle'; bottle.innerText = "🎐";
+      bottle.style.position = "absolute"; bottle.style.width = "50px"; bottle.style.height = "70px";
+      bottle.style.background = "rgba(255,255,255,0.2)"; bottle.style.border = "2px solid #aaa";
+      bottle.style.borderRadius = "10px"; bottle.style.textAlign = "center"; bottle.style.padding = "5px";
+      bottle.style.cursor = "pointer"; bottle.style.left = Math.random() * (window.innerWidth - 60) + "px";
+      bottle.style.top = Math.random() * (pond.clientHeight - 80) + "px";
+      bottle.style.animation = "float 12s infinite linear";
+      bottle.onclick = () => openWishDetail(key);
+      pond.appendChild(bottle);
+    }
+    function openWishDetail(key) {
+      const data = JSON.parse(localStorage.getItem(key));
+      document.getElementById('wishContent').innerText = data.text;
+      document.querySelectorAll('#wishDetailPopup input[type=radio]').forEach(input => {
+        input.checked = (input.value === data.status);
+      });
+      selectedWishKey = key;
+      document.getElementById('wishDetailPopup').style.display = 'block';
+    }
+    window.loadWishes = function loadWishes() {
+      pond.innerHTML = '';
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith("wish_")) {
+          const data = JSON.parse(localStorage.getItem(key));
+          addBottle(data.text, key);
+        }
+      });
+    }
+    loadWishes();
+  });
+  function deleteWish() {
+    if (selectedWishKey) {
+      localStorage.removeItem(selectedWishKey);
+      closeWishDetail();
+      location.reload();
+    }
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('#wishDetailPopup input[type=radio]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (selectedWishKey && this.checked) {
+          const data = JSON.parse(localStorage.getItem(selectedWishKey));
+          data.status = this.value;
+          localStorage.setItem(selectedWishKey, JSON.stringify(data));
+        }
+      });
+    });
+  });
+
+  // ====== 相册弹窗
+  function openAlbumPopup() {
+    // 直接使用已保存的照片列表来展示
+    const albumGallery = document.getElementById('albumGallery');
+    const list = JSON.parse(localStorage.getItem('gallery-photos')||'[]');
+    albumGallery.innerHTML = '';
+    list.forEach(url => {
+      const img = document.createElement('img');
+      img.src = url;
+      albumGallery.appendChild(img);
+    });
+    document.getElementById('albumPopup').style.display = 'block';
+  }
+  function closeAlbumPopup() { document.getElementById('albumPopup').style.display = 'none'; }
+  document.getElementById('uploadAlbumButton').addEventListener('click', function() {
+    document.getElementById('albumUploader').click();
+  });
+  document.getElementById('albumUploader').addEventListener('change', async function(e) {
+    const files = Array.from(e.target.files).slice(0, 12);
+    for (const f of files) {
+      const b64 = await fileToDataURL(f);
+      savedPhotos.unshift(b64);
+    }
+    localStorage.setItem(photosKey, JSON.stringify(savedPhotos.slice(0, 36)));
+    renderPhotos(savedPhotos.slice(0, 36));
+    e.target.value = '';
+  });
+
+  // ====== 小宠物弹窗
+  function openPetPopup() { document.getElementById('petPopup').style.display = 'block'; }
+  function closePetPopup() { document.getElementById('petPopup').style.display = 'none'; }
+
+  // ====== 私密空间逻辑
+  const SECRET_UNLOCK_KEY = 'secret-unlocked';
+  const SECRET_POSTS_KEY = 'secret-posts';
+  function openSecretModal(){
+    const modal = document.getElementById('secretModal');
+    const unlocked = localStorage.getItem(SECRET_UNLOCK_KEY) === '1';
+    document.getElementById('secretAuth').style.display = unlocked ? 'none' : 'block';
+    document.getElementById('secretSpace').style.display = unlocked ? 'block' : 'none';
+    if(unlocked){ renderSecret(); }
+    modal.style.display = 'block';
+    if(!unlocked){ setTimeout(()=>document.getElementById('secretPwd').focus(), 50); }
+  }
+  function checkSecretPassword(){
+    const input = document.getElementById('secretPwd');
+    const val = (input.value || '').trim();
+    if(val === '0418'){
+      localStorage.setItem(SECRET_UNLOCK_KEY, '1');
+      input.value='';
+      document.getElementById('secretAuth').style.display = 'none';
+      document.getElementById('secretSpace').style.display = 'block';
+      renderSecret();
+      toast('已解锁');
+    }else{
+      input.classList.add('shake');
+      toast('密码不对呀');
+      setTimeout(()=> input.classList.remove('shake'), 400);
+    }
+  }
+  function lockSecret(){
+    localStorage.removeItem(SECRET_UNLOCK_KEY);
+    document.getElementById('secretSpace').style.display = 'none';
+    document.getElementById('secretAuth').style.display = 'block';
+    toast('已上锁');
+  }
+  function closeSecretModal(){ document.getElementById('secretModal').style.display = 'none'; }
+  function postSecretMessage(author){
+    const ta = document.getElementById('secretInput');
+    const text = ta.value.trim();
+    if(!text) return;
+    const list = JSON.parse(localStorage.getItem(SECRET_POSTS_KEY) || '[]');
+    list.push({author, text, time: Date.now()});
+    if(list.length > 100) list.shift();
+    localStorage.setItem(SECRET_POSTS_KEY, JSON.stringify(list));
+    ta.value='';
+    renderSecret();
+  }
+  function renderSecret(){
+    const box = document.getElementById('secretList');
+    const list = JSON.parse(localStorage.getItem(SECRET_POSTS_KEY) || '[]');
+    box.innerHTML = '';
+    list.forEach(item=>{
+      const tag = document.createElement('div');
+      tag.className = 'secret-tag ' + (item.author === 'Leo' ? 'leo' : 'zoe');
+      tag.innerHTML = '<span class="author">' + escapeHtml(item.author) + '说：</span>' + escapeHtml(item.text) +
+                      '<div class="time">' + new Date(item.time).toLocaleString('zh-CN') + '</div>';
+      box.appendChild(tag);
+    });
+    box.scrollTop = box.scrollHeight;
+  }
+  function escapeHtml(str){
+    return str.replace(/[&<>"']/g, (ch)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[ch]));
+  }
+</script>
+</body>
+</html>
