@@ -530,24 +530,6 @@ async function cloudSetRaw(key, value) {
   } catch(e) {}
 }
 
-async function cloudPrefetch(key) { 
-  try { 
-    const r = await fetch(CLOUD_URL + '?key=' + encodeURIComponent(key) + '&token=' + encodeURIComponent(CLOUD_TOKEN)); 
-    const j = await r.json(); 
-    if (j && j.value != null) localStorage.__origSetItem__(key, j.value); 
-  } catch(e) {}
-}
-
-(function(){
-  if(!window.localStorage || !CLOUD_URL) return;
-  if(!localStorage.__origSetItem__) localStorage.__origSetItem__ = localStorage.setItem.bind(localStorage);
-  if(!localStorage.__origGetItem__) localStorage.__origGetItem__ = localStorage.getItem.bind(localStorage);
-  localStorage.setItem = function(k,v){
-    try{ localStorage.__origSetItem__(k,v); }
-    finally{ cloudSetRaw(k,v); }
-  };
-})();
-
 document.addEventListener('DOMContentLoaded', async function(){
   await cloudPrefetch('wallet-balance');
   await cloudPrefetch('gallery-photos');
