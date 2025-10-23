@@ -497,75 +497,6 @@
   </div>
 </div>
 
-
-<!-- === Cloud Sync Shim (auto-injected by Leo) === -->
-
-<script>
-(function(){
-  if(!window.fetch) return;
-  function setCloudState(t,d){ 
-    var s=document.getElementById('cloudState'), m=document.getElementById('cloudMsg'); 
-    if(s) s.textContent=t; if(m) m.textContent=d||''; 
-  }
-var url = "https://script.google.com/macros/s/AKfycbxuBXzQzw4GTJ9uTxQHBryouVohLVxlfqr2s5euRf1E-YHYUyS-4giZV_RhQrodB-Cmmw/exec" + '?key=__ping&token=' + encodeURIComponent("ZoeLeo0418_MySecret_123");
-
-  fetch(url).then(r=>r.json()).then(j=>{ 
-    setCloudState('已连接','ok=' + j.ok); 
-    console.log('[CLOUD PING]', j); 
-  }).catch(e=>{ setCloudState('未连接', String(e)); console.warn('[CLOUD PING ERROR]', e); });
-})();
-</script>
-<script>
-const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbxuBXzQzw4GTJ9uTxQHBryouVohLVxlfqr2s5euRf1E-YHYUyS-4giZV_RhQrodB-Cmmw/exec';
-const CLOUD_TOKEN = 'ZoeLeo0418_MySecret_123';
-
-async function cloudSetRaw(key, value) { 
-  try {
-   console.log("正在上传:", { token: CLOUD_TOKEN, key, value });
- await fetch(CLOUD_URL, {
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ token: CLOUD_TOKEN, key, value })
-    });
-  } catch(e) {}
-}
-
-document.addEventListener('DOMContentLoaded', async function(){
-  await cloudPrefetch('wallet-balance');
-  await cloudPrefetch('gallery-photos');
-  await cloudPrefetch('secret-posts');
-  const keys = [
-    'wallet-balance',
-    'gallery-photos',
-    'secret-posts',
-    'secret-unlocked',
-    'mood-' + new Date().toISOString().slice(0,10)
-  ];
-  for (const k of keys) { cloudPrefetch(k); }
-  setTimeout(function(){
-    try{ 
-      const list = JSON.parse(localStorage.getItem('gallery-photos')||'[]');
-      if (window.renderPhotos) window.renderPhotos(list);
-    }catch(e){}
-    try{ 
-      const v = localStorage.getItem('wallet-balance');
-      const el = document.getElementById('walletValue');
-      if (el && v != null) el.textContent = v;
-    }catch(e){}
-    try{ if (window.renderSecret) window.renderSecret(); }catch(e){}
-  }, 800);
-});
-
-window.__openDiaryPrefetch__ = function(dateStr){ 
-  cloudPrefetch('diary_' + dateStr).then(function(){ 
-    try{ 
-      const v = localStorage.getItem('diary_' + dateStr) || ''; 
-      const ta = document.getElementById('diaryText'); if(ta) ta.value = v; 
-    }catch(e){} 
-  }); 
-};
-</script>
-<!-- === /Cloud Sync Shim === -->
 <script>
   // ====== 星星背景
   (function(){
@@ -957,46 +888,6 @@ window.__openDiaryPrefetch__ = function(dateStr){
     return str.replace(/[&<>"']/g, (ch)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[ch]));
   }
 
-async function cloudGetRaw(key) {
-  try {
-    const res = await fetch(CLOUD_URL + '?token=' + encodeURIComponent(CLOUD_TOKEN) + '&key=' + encodeURIComponent(key));
-    const data = await res.json();
-    if (data.ok) {
-      console.log("从云端读取成功：", data);
-      return data.value || "";
-    } else {
-      console.warn("读取失败：", data.error);
-      return "";
-    }
-  } catch (e) {
-    console.error("cloudGetRaw出错：", e);
-    return "";
-  }
-}
-// === 页面加载时自动从云端读取保存的数据 ===
-window.addEventListener('DOMContentLoaded', async () => {
-  const keys = ['wallet-balance', 'mood', 'diary', 'secret']; // 网页保存内容用的key
-  for (const key of keys) {
-    try {
-      const value = await cloudGetRaw(key);
-      if (value) {
-        const el = document.querySelector(`[data-key="${key}"]`);
-        if (el) {
-          if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-            el.value = value;
-          } else {
-            el.textContent = value;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn(`加载 ${key} 出错`, e);
-    }
-  }
-  console.log('✅ 自动加载完成');
-});
-
-
 </script>
 <script>
   const form = document.querySelector("form");
@@ -1015,6 +906,113 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
 </script>
+<!-- === 修复版云端同步代码 === -->
+<script>
+(function(){
+  const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbxuBXzQzw4GTJ9uTxQHBryouVohLVxlfqr2s5euRf1E-YHYUyS-4giZV_RhQrodB-Cmmw/exec';
+  const CLOUD_TOKEN = 'ZoeLeo0418_MySecret_123';
 
+  // 设置云端状态显示
+  function setCloudState(text, detail) {
+    const stateEl = document.getElementById('cloudState');
+    const msgEl = document.getElementById('cloudMsg');
+    if (stateEl) stateEl.textContent = text;
+    if (msgEl) msgEl.textContent = detail || '';
+  }
+
+  // 云存储写入
+  async function cloudSetRaw(key, value) {
+    try {
+      const response = await fetch(CLOUD_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: CLOUD_TOKEN, key, value })
+      });
+      const data = await response.json();
+      if (!data.ok) throw new Error(data.error || 'SET_FAILED');
+      console.log('✅ 云存储写入成功:', key);
+      return true;
+    } catch (error) {
+      console.error('❌ 云存储写入失败:', key, error);
+      return false;
+    }
+  }
+
+  // 云存储读取
+  async function cloudGetRaw(key) {
+    try {
+      const url = `${CLOUD_URL}?token=${encodeURIComponent(CLOUD_TOKEN)}&key=${encodeURIComponent(key)}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      if (!data.ok) throw new Error(data.error || 'GET_FAILED');
+      return data.value || '';
+    } catch (error) {
+      console.error('❌ 云存储读取失败:', key, error);
+      return '';
+    }
+  }
+
+  // 预取数据
+  async function cloudPrefetch(key) {
+    const value = await cloudGetRaw(key);
+    if (value !== '' && value != null) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {
+        console.warn('本地存储失败:', e);
+      }
+    }
+  }
+
+  // 测试连接
+  async function testConnection() {
+    try {
+      const response = await fetch(`${CLOUD_URL}?key=__ping&token=${encodeURIComponent(CLOUD_TOKEN)}`);
+      const data = await response.json();
+      if (data.ok) {
+        setCloudState('已连接', '同步正常');
+        return true;
+      } else {
+        setCloudState('连接异常', data.error || '未知错误');
+        return false;
+      }
+    } catch (error) {
+      setCloudState('未连接', error.message);
+      return false;
+    }
+  }
+
+  // 拦截 localStorage.setItem 以同步到云
+  const originalSetItem = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, value) {
+    originalSetItem(key, value);
+    // 只同步特定的 key
+    if (key.startsWith('wallet-balance') || key.startsWith('gallery-photos') || key.startsWith('secret-') || key.startsWith('diary_') || key.startsWith('mood-')) {
+      setTimeout(() => cloudSetRaw(key, value), 100); // 延迟同步避免阻塞
+    }
+  };
+
+  // 页面加载时预取数据
+  window.addEventListener('DOMContentLoaded', async () => {
+    // 测试连接
+    await testConnection();
+
+    // 预取关键数据（但不要等待，避免阻塞页面）
+    const keys = ['wallet-balance', 'gallery-photos', 'secret-posts', 'secret-unlocked'];
+    keys.forEach(key => {
+      setTimeout(() => cloudPrefetch(key), 500);
+    });
+    
+    // 预取今天的心情
+    const todayKey = 'mood-' + new Date().toISOString().slice(0,10);
+    setTimeout(() => cloudPrefetch(todayKey), 600);
+  });
+
+  // 暴露函数到全局
+  window.cloudSetRaw = cloudSetRaw;
+  window.cloudGetRaw = cloudGetRaw;
+  window.cloudPrefetch = cloudPrefetch;
+})();
+</script>
 </body>
 </html>
