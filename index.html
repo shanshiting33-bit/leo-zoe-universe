@@ -998,5 +998,23 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 
 </script>
+<script>
+  const form = document.querySelector("form");
+  if (form) {
+    form.addEventListener("submit", function(event) {
+      const mood = document.querySelector('input[name="mood"]:checked')?.value || "";
+      const balance = document.getElementById("balanceInput")?.value || "";
+      const data = { mood, balance };
+
+      fetch("https://script.google.com/macros/s/AKfycbxuBXzQzw4GTJ9uTxQHBryouVohLVxlfqr2s5euRf1E-YHYUyS-4giZV_RhQrodB-Cmmw/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    });
+  }
+</script>
+
 </body>
 </html>
