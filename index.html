@@ -498,6 +498,13 @@
 </div>
 
 <script>
+// ====== 临时修复 cloudPrefetch 函数（放在第一个 script 标签的开头）
+window.cloudPrefetch = async function(key) {
+  console.log('cloudPrefetch called for:', key);
+  // 这是一个空函数，避免报错
+  return '';
+};
+
   // ====== 星星背景
   (function(){
     const box = document.getElementById('stars');
