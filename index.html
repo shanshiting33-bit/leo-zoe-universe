@@ -971,6 +971,23 @@ window.__openDiaryPrefetch__ = function(dateStr){
   function escapeHtml(str){
     return str.replace(/[&<>"']/g, (ch)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[ch]));
   }
+
+async function cloudGetRaw(key) {
+  try {
+    const res = await fetch(CLOUD_URL + '?token=' + encodeURIComponent(CLOUD_TOKEN) + '&key=' + encodeURIComponent(key));
+    const data = await res.json();
+    if (data.ok) {
+      console.log("从云端读取成功：", data);
+      return data.value || "";
+    } else {
+      console.warn("读取失败：", data.error);
+      return "";
+    }
+  } catch (e) {
+    console.error("cloudGetRaw出错：", e);
+    return "";
+  }
+}
 </script>
 </body>
 </html>
