@@ -913,92 +913,62 @@ window.cloudPrefetch = async function(key) {
     });
   }
 </script>
-<!-- === 修复 CORS 的云端同步代码 === -->
 <script>
 (function(){
-  // 使用你新部署的 GAS URL
-  const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbx6byEGGoApJXOHvFyXRXzFeercForF4yY6iLiofY-OywveybaznXP9mhWOnDQHo5UYYQ/exec';
+  // === 使用新的 GAS 部署 URL ===
+  const CLOUD_URL = 'https://script.google.com/macros/s/AKfycby_1tT4AHf54dFqqxLRbhq3xDf2NEuBf6PgXTS0mMlrmf-jurAXAR33PAlBVs8JSZAenw/exec';
   const CLOUD_TOKEN = 'ZoeLeo0418_MySecret_123';
 
-  function setCloudState(text, detail) {
-    const stateEl = document.getElementById('cloudState');
-    const msgEl = document.getElementById('cloudMsg');
-    if (stateEl) stateEl.textContent = text;
-    if (msgEl) msgEl.textContent = detail || '';
-  }
-
-  // 云存储写入
+  // 简化的云存储函数
   async function cloudSetRaw(key, value) {
     try {
-      console.log('🔄 正在写入云端:', key, '值:', value);
+      const params = new URLSearchParams({
+        token: CLOUD_TOKEN,
+        action: 'set',
+        key: key,
+        value: value
+      });
       
       const response = await fetch(CLOUD_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          token: CLOUD_TOKEN, 
-          key: key, 
-          value: value 
-        })
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: params
       });
       
-      const result = await response.json();
-      console.log('📨 写入响应:', result);
-      
-      if (result.ok) {
-        console.log('✅ 写入成功!');
-        setCloudState('已连接', '数据已保存');
-        return true;
-      } else {
-        console.error('❌ 写入失败:', result.error);
-        setCloudState('写入失败', result.error);
-        return false;
-      }
+      return await response.json();
     } catch (error) {
-      console.error('❌ 网络错误:', error);
-      setCloudState('网络错误', error.message);
-      return false;
+      console.error('网络错误:', error);
+      return {ok: false, error: error.message};
     }
   }
 
-  // 手动测试函数
+  // 测试函数
   window.testCloudWrite = async function() {
     const testKey = 'test-' + Date.now();
     const testValue = '测试数据 ' + new Date().toLocaleString();
     
-    console.log('🧪 开始测试写入...');
-    const success = await cloudSetRaw(testKey, testValue);
+    console.log('测试写入:', testKey, testValue);
+    const result = await cloudSetRaw(testKey, testValue);
     
-    if (success) {
-      alert('✅ 测试写入成功！请检查 Google 表格。');
+    if (result.ok) {
+      alert('✅ 写入成功！');
     } else {
-      alert('❌ 测试写入失败，请查看控制台错误信息。');
+      alert('❌ 失败: ' + (result.error || '未知错误'));
     }
   };
 
-  // 页面加载时添加测试按钮
+  // 添加测试按钮
   window.addEventListener('DOMContentLoaded', function() {
     const testBtn = document.createElement('button');
-    testBtn.textContent = '🔧 测试写入';
+    testBtn.textContent = '测试连接';
     testBtn.style.cssText = `
-      position: fixed;
-      left: 12px;
-      bottom: 12px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 10px;
-      cursor: pointer;
-      z-index: 99999;
-      font-size: 14px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      position: fixed; left: 12px; bottom: 12px;
+      background: #4CAF50; color: white; border: none;
+      padding: 10px 16px; border-radius: 10px; cursor: pointer;
+      z-index: 99999; font-size: 14px;
     `;
     testBtn.onclick = window.testCloudWrite;
     document.body.appendChild(testBtn);
-    
-    console.log('🔧 测试按钮已添加');
-    setCloudState('就绪', '点击测试按钮检查连接');
   });
 })();
 </script>
