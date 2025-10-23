@@ -913,7 +913,7 @@ window.cloudPrefetch = async function(key) {
     });
   }
 </script>
-<!-- === 修复版云端同步代码 === -->
+<!-- === 终极修复版云端同步代码 === -->
 <script>
 (function(){
   const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbxuBXzQzw4GTJ9uTxQHBryouVohLVxlfqr2s5euRf1E-YHYUyS-4giZV_RhQrodB-Cmmw/exec';
@@ -927,20 +927,36 @@ window.cloudPrefetch = async function(key) {
     if (msgEl) msgEl.textContent = detail || '';
   }
 
-  // 云存储写入
+  // 云存储写入 - 简化版本
   async function cloudSetRaw(key, value) {
     try {
+      console.log('🔄 正在写入云端:', key, '值:', value);
+      
       const response = await fetch(CLOUD_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: CLOUD_TOKEN, key, value })
+        body: JSON.stringify({ 
+          token: CLOUD_TOKEN, 
+          key: key, 
+          value: value 
+        })
       });
-      const data = await response.json();
-      if (!data.ok) throw new Error(data.error || 'SET_FAILED');
-      console.log('✅ 云存储写入成功:', key);
-      return true;
+      
+      const result = await response.json();
+      console.log('📨 写入响应:', result);
+      
+      if (result.ok) {
+        console.log('✅ 写入成功!');
+        setCloudState('已连接', '数据已保存');
+        return true;
+      } else {
+        console.error('❌ 写入失败:', result.error);
+        setCloudState('写入失败', result.error);
+        return false;
+      }
     } catch (error) {
-      console.error('❌ 云存储写入失败:', key, error);
+      console.error('❌ 网络错误:', error);
+      setCloudState('网络错误', error.message);
       return false;
     }
   }
@@ -950,24 +966,17 @@ window.cloudPrefetch = async function(key) {
     try {
       const url = `${CLOUD_URL}?token=${encodeURIComponent(CLOUD_TOKEN)}&key=${encodeURIComponent(key)}`;
       const response = await fetch(url);
-      const data = await response.json();
-      if (!data.ok) throw new Error(data.error || 'GET_FAILED');
-      return data.value || '';
-    } catch (error) {
-      console.error('❌ 云存储读取失败:', key, error);
-      return '';
-    }
-  }
-
-  // 预取数据
-  async function cloudPrefetch(key) {
-    const value = await cloudGetRaw(key);
-    if (value !== '' && value != null) {
-      try {
-        localStorage.setItem(key, value);
-      } catch (e) {
-        console.warn('本地存储失败:', e);
+      const result = await response.json();
+      
+      if (result.ok) {
+        return result.value || '';
+      } else {
+        console.error('读取失败:', result.error);
+        return '';
       }
+    } catch (error) {
+      console.error('读取错误:', error);
+      return '';
     }
   }
 
@@ -975,50 +984,75 @@ window.cloudPrefetch = async function(key) {
   async function testConnection() {
     try {
       const response = await fetch(`${CLOUD_URL}?key=__ping&token=${encodeURIComponent(CLOUD_TOKEN)}`);
-      const data = await response.json();
-      if (data.ok) {
-        setCloudState('已连接', '同步正常');
+      const result = await response.json();
+      
+      if (result.ok) {
+        setCloudState('已连接', '点击"测试写入"检查同步');
         return true;
       } else {
-        setCloudState('连接异常', data.error || '未知错误');
+        setCloudState('连接异常', result.error);
         return false;
       }
     } catch (error) {
-      setCloudState('未连接', error.message);
+      setCloudState('连接失败', error.message);
       return false;
     }
   }
 
-  // 拦截 localStorage.setItem 以同步到云
-  const originalSetItem = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = function(key, value) {
-    originalSetItem(key, value);
-    // 只同步特定的 key
-    if (key.startsWith('wallet-balance') || key.startsWith('gallery-photos') || key.startsWith('secret-') || key.startsWith('diary_') || key.startsWith('mood-')) {
-      setTimeout(() => cloudSetRaw(key, value), 100); // 延迟同步避免阻塞
+  // 手动测试写入功能
+  window.testCloudWrite = async function() {
+    const testKey = 'test-' + Date.now();
+    const testValue = '测试数据 ' + new Date().toLocaleString();
+    
+    console.log('🧪 开始测试写入...');
+    const success = await cloudSetRaw(testKey, testValue);
+    
+    if (success) {
+      alert('✅ 测试写入成功！请检查 Google 表格是否有新数据。');
+    } else {
+      alert('❌ 测试写入失败，请查看控制台错误信息。');
     }
   };
 
-  // 页面加载时预取数据
-  window.addEventListener('DOMContentLoaded', async () => {
-    // 测试连接
-    await testConnection();
-
-    // 预取关键数据（但不要等待，避免阻塞页面）
-    const keys = ['wallet-balance', 'gallery-photos', 'secret-posts', 'secret-unlocked'];
-    keys.forEach(key => {
-      setTimeout(() => cloudPrefetch(key), 500);
-    });
+  // 拦截 localStorage.setItem 以同步到云
+  const originalSetItem = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, value) {
+    // 先保存到本地
+    originalSetItem(key, value);
     
-    // 预取今天的心情
-    const todayKey = 'mood-' + new Date().toISOString().slice(0,10);
-    setTimeout(() => cloudPrefetch(todayKey), 600);
+    // 只同步特定的 key
+    const syncKeys = ['wallet-balance', 'gallery-photos', 'secret-posts', 'secret-unlocked'];
+    const syncPatterns = [/^diary_/, /^mood-/];
+    
+    const shouldSync = syncKeys.includes(key) || syncPatterns.some(pattern => pattern.test(key));
+    
+    if (shouldSync) {
+      console.log('🔄 自动同步到云端:', key);
+      // 异步同步，不等待结果
+      cloudSetRaw(key, value);
+    }
+  };
+
+  // 页面加载时初始化
+  window.addEventListener('DOMContentLoaded', async () => {
+    console.log('🚀 初始化云端同步...');
+    await testConnection();
+    
+    // 添加测试按钮到页面
+    const testBtn = document.createElement('button');
+    testBtn.textContent = '测试写入';
+    testBtn.style.cssText = 'position:fixed;left:12px;bottom:12px;background:#4CAF50;color:white;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;z-index:99999;';
+    testBtn.onclick = window.testCloudWrite;
+    document.body.appendChild(testBtn);
   });
 
   // 暴露函数到全局
   window.cloudSetRaw = cloudSetRaw;
   window.cloudGetRaw = cloudGetRaw;
-  window.cloudPrefetch = cloudPrefetch;
+  window.cloudPrefetch = async (key) => {
+    const value = await cloudGetRaw(key);
+    if (value) localStorage.setItem(key, value);
+  };
 })();
 </script>
 </body>
