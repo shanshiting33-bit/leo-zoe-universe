@@ -549,6 +549,9 @@ async function cloudPrefetch(key) {
 })();
 
 document.addEventListener('DOMContentLoaded', async function(){
+  await cloudPrefetch('wallet-balance');
+  await cloudPrefetch('gallery-photos');
+  await cloudPrefetch('secret-posts');
   const keys = [
     'wallet-balance',
     'gallery-photos',
