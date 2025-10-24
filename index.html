@@ -693,5 +693,54 @@
 })();
 
 </script>
+
+<script>
+(function () {
+  const $ = s => document.querySelector(s);
+  const show = s => { const el = $(s); if (el) el.style.display = 'block'; };
+  const hide = s => { const el = $(s); if (el) el.style.display = 'none'; };
+
+  /* 日记本 */
+  window.openDiaryModal = () => {
+    show('#diaryModal');
+    const today = new Date().toISOString().slice(0, 10);
+    const key = 'diary_' + today;
+    const textArea = document.getElementById('diaryText');
+    if (textArea) textArea.value = localStorage.getItem(key) || '';
+  };
+  window.closeDiaryModal = () => hide('#diaryModal');
+  window.saveDiary = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = 'diary_' + today;
+    const val = (document.getElementById('diaryText')||{}).value || '';
+    localStorage.setItem(key, val);
+    if (window.cloudSetRaw) cloudSetRaw(key, val);
+    alert('✅ 日记已保存');
+    hide('#diaryModal');
+  };
+
+  /* 相册 */
+  window.openAlbumPopup = () => show('#albumPopup');
+  window.closeAlbumPopup = () => hide('#albumPopup');
+
+  /* 留言板 */
+  window.openMessageBoard = () => show('#messageBoardPopup');
+  window.closeMessageBoard = () => hide('#messageBoardPopup');
+
+  /* 许愿池 */
+  window.openWishingPool = () => show('#wishingPoolOverlay');
+  window.closeWishingPool = () => hide('#wishingPoolOverlay');
+  window.closeWishDetail = () => hide('#wishDetailPopup');
+
+  /* 小宠物 */
+  window.openPetPopup = () => show('#petPopup');
+  window.closePetPopup = () => hide('#petPopup');
+
+  /* 私密空间 */
+  window.openSecretModal = () => show('#secretModal');
+  window.closeSecretModal = () => hide('#secretModal');
+})();
+</script>
+
 </body>
 </html>
