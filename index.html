@@ -897,23 +897,6 @@ window.cloudPrefetch = async function(key) {
 
 </script>
 <script>
-  const form = document.querySelector("form");
-  if (form) {
-    form.addEventListener("submit", function(event) {
-      const mood = document.querySelector('input[name="mood"]:checked')?.value || "";
-      const balance = document.getElementById("balanceInput")?.value || "";
-      const data = { mood, balance };
-
-      fetch("https://script.google.com/macros/s/AKfycbymkaOBmTpR2zqyT9-hLbeH8Of52t7VLJuhFWaj3boyZGo4QpA3B21qOA6qVXd0RzKc_g/exec", {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-    });
-  }
-</script>
-<script>
 (function(){
   const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbymkaOBmTpR2zqyT9-hLbeH8Of52t7VLJuhFWaj3boyZGo4QpA3B21qOA6qVXd0RzKc_g/exec';
   const CLOUD_TOKEN = 'ZoeLeo0418_MySecret_123';
@@ -977,13 +960,16 @@ window.cloudPrefetch = async function(key) {
       
       if (result.ok) {
         console.log('✅ 写入成功!');
+        setCloudState('已连接', '数据已保存');
         return true;
       } else {
         console.error('❌ 写入失败:', result.error);
+        setCloudState('写入失败', result.error);
         return false;
       }
     } catch (error) {
       console.error('❌ 网络错误:', error);
+      setCloudState('网络错误', error.message);
       return false;
     }
   }
@@ -1010,5 +996,73 @@ window.cloudPrefetch = async function(key) {
     
     console.log('🧪 开始测试写入...');
     
-    // 先测试</body>
+    // 先测试连接
+    const connected = await testConnection();
+    if (!connected) {
+      alert('❌ 连接测试失败，请检查 URL 和权限设置');
+      return;
+    }
+    
+    const success = await cloudSetRaw(testKey, testValue);
+    
+    if (success) {
+      alert('✅ 测试写入成功！请检查 Google 表格。');
+    } else {
+      alert('❌ 测试写入失败，请查看控制台错误信息。');
+    }
+  };
+
+  function setCloudState(text, detail) {
+    const stateEl = document.getElementById('cloudState');
+    const msgEl = document.getElementById('cloudMsg');
+    if (stateEl) stateEl.textContent = text;
+    if (msgEl) msgEl.textContent = detail || '';
+  }
+
+  // 页面加载时添加测试按钮
+  window.addEventListener('DOMContentLoaded', function() {
+    const testBtn = document.createElement('button');
+    testBtn.textContent = '🔧 测试云端连接';
+    testBtn.style.cssText = `
+      position: fixed;
+      left: 12px;
+      bottom: 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      z-index: 99999;
+      font-size: 14px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    `;
+    testBtn.onclick = window.testCloudWrite;
+    document.body.appendChild(testBtn);
+    
+    console.log('🔧 测试按钮已添加');
+    setCloudState('就绪', '点击测试按钮检查连接');
+    
+    // 自动测试连接
+    setTimeout(() => testConnection(), 1000);
+  });
+
+  // 暴露函数给全局作用域
+  window.cloudSetRaw = cloudSetRaw;
+  window.cloudPrefetch = async function(key) {
+    try {
+      const result = await jsonpRequest({
+        token: CLOUD_TOKEN,
+        action: 'get',
+        key: key
+      });
+      return result.ok ? result.value : '';
+    } catch (error) {
+      console.error('读取失败:', error);
+      return '';
+    }
+  };
+})();
+</script>
+</body>
 </html>
