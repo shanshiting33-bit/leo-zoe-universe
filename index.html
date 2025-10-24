@@ -904,7 +904,7 @@ window.cloudPrefetch = async function(key) {
       const balance = document.getElementById("balanceInput")?.value || "";
       const data = { mood, balance };
 
-      fetch("https://script.google.com/macros/s/AKfycby_1tT4AHf54dFqqxLRbhq3xDf2NEuBf6PgXTS0mMlrmf-jurAXAR33PAlBVs8JSZAenw/exec", {
+      fetch("https://script.google.com/macros/s/AKfycbymkaOBmTpR2zqyT9-hLbeH8Of52t7VLJuhFWaj3boyZGo4QpA3B21qOA6qVXd0RzKc_g/exec", {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
@@ -915,62 +915,100 @@ window.cloudPrefetch = async function(key) {
 </script>
 <script>
 (function(){
-  // === 使用新的 GAS 部署 URL ===
-  const CLOUD_URL = 'https://script.google.com/macros/s/AKfycby_1tT4AHf54dFqqxLRbhq3xDf2NEuBf6PgXTS0mMlrmf-jurAXAR33PAlBVs8JSZAenw/exec';
+  const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbymkaOBmTpR2zqyT9-hLbeH8Of52t7VLJuhFWaj3boyZGo4QpA3B21qOA6qVXd0RzKc_g/exec';
   const CLOUD_TOKEN = 'ZoeLeo0418_MySecret_123';
-
-  // 简化的云存储函数
+  
+  // JSONP 方法
+  function jsonpRequest(params) {
+    return new Promise((resolve, reject) => {
+      const callbackName = 'jsonp_callback_' + Date.now() + '_' + Math.random().toString(36).substr(2);
+      
+      // 添加回调参数
+      params.callback = callbackName;
+      
+      // 创建 script 标签
+      const script = document.createElement('script');
+      const url = CLOUD_URL + '?' + new URLSearchParams(params).toString();
+      script.src = url;
+      
+      // 设置超时
+      const timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error('请求超时'));
+      }, 10000);
+      
+      // 清理函数
+      function cleanup() {
+        clearTimeout(timeoutId);
+        delete window[callbackName];
+        document.head.removeChild(script);
+      }
+      
+      // 设置全局回调函数
+      window[callbackName] = function(data) {
+        cleanup();
+        resolve(data);
+      };
+      
+      // 错误处理
+      script.onerror = function() {
+        cleanup();
+        reject(new Error('网络错误'));
+      };
+      
+      // 发送请求
+      document.head.appendChild(script);
+    });
+  }
+  
+  // 使用 JSONP 的云存储函数
   async function cloudSetRaw(key, value) {
     try {
-      const params = new URLSearchParams({
+      console.log('🔄 正在写入云端:', key, '值:', value);
+      
+      const result = await jsonpRequest({
         token: CLOUD_TOKEN,
         action: 'set',
         key: key,
         value: value
       });
       
-      const response = await fetch(CLOUD_URL, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: params
-      });
+      console.log('📨 写入响应:', result);
       
-      return await response.json();
+      if (result.ok) {
+        console.log('✅ 写入成功!');
+        return true;
+      } else {
+        console.error('❌ 写入失败:', result.error);
+        return false;
+      }
     } catch (error) {
-      console.error('网络错误:', error);
-      return {ok: false, error: error.message};
+      console.error('❌ 网络错误:', error);
+      return false;
+    }
+  }
+  
+  // 测试连接
+  async function testConnection() {
+    try {
+      const result = await jsonpRequest({
+        token: CLOUD_TOKEN,
+        action: 'ping'
+      });
+      console.log('连接测试:', result);
+      return result.ok;
+    } catch (error) {
+      console.error('连接测试失败:', error);
+      return false;
     }
   }
 
-  // 测试函数
+  // 手动测试函数
   window.testCloudWrite = async function() {
     const testKey = 'test-' + Date.now();
     const testValue = '测试数据 ' + new Date().toLocaleString();
     
-    console.log('测试写入:', testKey, testValue);
-    const result = await cloudSetRaw(testKey, testValue);
+    console.log('🧪 开始测试写入...');
     
-    if (result.ok) {
-      alert('✅ 写入成功！');
-    } else {
-      alert('❌ 失败: ' + (result.error || '未知错误'));
-    }
-  };
-
-  // 添加测试按钮
-  window.addEventListener('DOMContentLoaded', function() {
-    const testBtn = document.createElement('button');
-    testBtn.textContent = '测试连接';
-    testBtn.style.cssText = `
-      position: fixed; left: 12px; bottom: 12px;
-      background: #4CAF50; color: white; border: none;
-      padding: 10px 16px; border-radius: 10px; cursor: pointer;
-      z-index: 99999; font-size: 14px;
-    `;
-    testBtn.onclick = window.testCloudWrite;
-    document.body.appendChild(testBtn);
-  });
-})();
-</script>
-</body>
+    // 先测试</body>
 </html>
