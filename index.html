@@ -983,8 +983,9 @@ const keys = [
       // 发送请求
       document.head.appendChild(script);
     });
-  }
-  
+  };
+  const jsonpRequest = window.jsonpRequest;   // 新增，把函数引用给内部使用
+
   // 使用 JSONP 的云存储函数
   async function cloudSetRaw(key, value) {
     try {
