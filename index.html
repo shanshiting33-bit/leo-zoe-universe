@@ -498,29 +498,53 @@
 </div>
 
 <script>
-/* —— 云同步钩子 —— */
+// —— 云同步 · 正式版 ——
+window.cloudPrefetch = async function (key) {
+  try {
+    const r = await jsonpRequest({
+      token: CLOUD_TOKEN,
+      action: 'get',
+      key: key
+    });
+    if (r.ok) {
+      console.log('☁️ 读取成功', key, r.value);
+      return r.value || '';
+    } else {
+      console.warn('💔 读取失败', key, r.error);
+      return '';
+    }
+  } catch (e) {
+    console.error('❌ 网络错误', e);
+    return '';
+  }
+};
+
+/* 本地 → 云端：覆写 setItem */
 (function () {
   const _set = localStorage.setItem;
   localStorage.setItem = function (k, v) {
-    _set.call(this, k, v);          // 先写本地
-    if (window.cloudSetRaw) cloudSetRaw(k, v);   // 再写云端
+    _set.call(this, k, v);
+    if (window.cloudSetRaw) cloudSetRaw(k, v);
   };
 })();
 
-/* —— 首次加载：云端 → 本地 —— */
+/* 首次加载：云端 → 本地 */
 (async () => {
-  const keys = [
-    'wallet-balance',
-    'gallery-photos',
-    'secret-posts',
-    'mood-' + new Date().toISOString().slice(0, 10)  // 今日心情
-  ];
+  const today = new Date().toISOString().slice(0, 10);
+const keys = [
+  'wallet-balance',
+  'gallery-photos',
+  'mood-'  + today,
+  'diary_' + today,  // ← 改好的
+  'secret-posts'
+];
+
   for (const k of keys) {
     const v = await cloudPrefetch(k);
     if (v) localStorage.setItem(k, v);
   }
 })();
-``` :contentReference[oaicite:0]{index=0}
+
 
   // ====== 星星背景
   (function(){
