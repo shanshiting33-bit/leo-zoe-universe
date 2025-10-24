@@ -498,12 +498,29 @@
 </div>
 
 <script>
-// ====== 临时修复 cloudPrefetch 函数（放在第一个 script 标签的开头）
-window.cloudPrefetch = async function(key) {
-  console.log('cloudPrefetch called for:', key);
-  // 这是一个空函数，避免报错
-  return '';
-};
+/* —— 云同步钩子 —— */
+(function () {
+  const _set = localStorage.setItem;
+  localStorage.setItem = function (k, v) {
+    _set.call(this, k, v);          // 先写本地
+    if (window.cloudSetRaw) cloudSetRaw(k, v);   // 再写云端
+  };
+})();
+
+/* —— 首次加载：云端 → 本地 —— */
+(async () => {
+  const keys = [
+    'wallet-balance',
+    'gallery-photos',
+    'secret-posts',
+    'mood-' + new Date().toISOString().slice(0, 10)  // 今日心情
+  ];
+  for (const k of keys) {
+    const v = await cloudPrefetch(k);
+    if (v) localStorage.setItem(k, v);
+  }
+})();
+``` :contentReference[oaicite:0]{index=0}
 
   // ====== 星星背景
   (function(){
