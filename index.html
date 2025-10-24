@@ -1091,19 +1091,29 @@ const keys = [
 
   // 暴露函数给全局作用域
   window.cloudSetRaw = cloudSetRaw;
-  window.cloudPrefetch = async function(key) {
-    try {
-      const result = await jsonpRequest({
-        token: CLOUD_TOKEN,
-        action: 'get',
-        key: key
-      });
-      return result.ok ? result.value : '';
-    } catch (error) {
-      console.error('读取失败:', error);
-      return '';
+ window.cloudPrefetch = async function(key) {
+  try {
+    const result = await jsonpRequest({
+      token: CLOUD_TOKEN,
+      action: 'get',
+      key: key
+    });
+
+    // 如果成功返回数据
+    if (result.ok) {
+      console.log('数据读取成功:', key, result.value); // 调试用
+      return result.value || '';  // 返回值或空字符串
+    } else {
+      console.warn('读取失败', key, result.error);
+      return '';  // 如果失败，返回空字符串
     }
-  };
+
+  } catch (e) {
+    console.error('网络错误', e);
+    return '';  // 如果发生错误，返回空字符串
+  }
+};
+
 })();
 </script>
 </body>
